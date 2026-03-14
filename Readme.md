@@ -492,9 +492,9 @@ Built at **Hackathon 2025** by:
 | Name | GitHub |
 |------|--------|
 | Ansuman Swain | [@lightlimb78](https://github.com/lightlimb78) |
-| Dibyam Chandak | — |
-| Ashutosh Narayan | [@Ashutosh-334](https://github.com/Ashutosh-334) |
 | Suresh Kumar Ekka | [@sureshkum4r](https://github.com/sureshkum4r) |
+| Ashutosh Narayan | [@Ashutosh-334](https://github.com/Ashutosh-334) |
+| Dibyam Chandak | - |
 
 ---
 
