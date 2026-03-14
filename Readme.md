@@ -253,8 +253,7 @@ demonet-radar-hunt/
 │   └── trees.tsx                     # Decorative scene elements
 │
 ├── hooks/
-│   ├── use-gps.ts                    # watchPosition wrapper with error handling
-│   ├── use-socket.ts                 # Polling abstraction layer
+│   ├── use-gps.ts                    # watchPosition wrapper with error handling                 
 │   ├── use-spatial-audio.ts          # Positional audio (Web Audio API)
 │   ├── use-haptics.ts                # Device vibration patterns
 │   ├── use-mobile.ts                 # Viewport / device detection
