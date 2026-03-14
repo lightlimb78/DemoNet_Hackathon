@@ -1,99 +1,265 @@
- 🔦 Stranger Things: Real-World GPS Hunt
+<div align="center">
 
-> *Among Us — but you physically walk, run, and hide in the real world.*
+# 🔴 DEMONET: RADAR HUNT
 
-A real-time, location-based multiplayer game where players take on secret roles and physically move through the real world to hunt — or survive — the Demogorgon. Built with Next.js, Socket.IO, and the browser Geolocation API.
+### *A real-world GPS manhunt. One monster. Many hunters. No safe ground.*
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+
+**Built at Hackathon 2025**
+
+[Features](#-features) · [Roles](#-roles) · [Game Flow](#-game-flow) · [Architecture](#-architecture) · [Setup](#-getting-started) · [API Reference](#-api-reference) · [Team](#-team)
+
+</div>
 
 ---
 
-## 🎮 How It Works
+## 🎯 What Is DEMONET?
 
-1. A **host** creates a lobby and shares a 6-character room code.
-2. Players **join** on their phones and mark themselves ready.
-3. The server **secretly assigns roles** — Demogorgon, Security, or Stealth.
-4. Everyone **physically moves** through the real-world area. Your GPS position is your game position.
-5. Security agents track threat proximity via a **radar**. The Demogorgon hunts using special abilities.
-6. The game ends when either the **timer expires** (Security wins) or **all agents are caught** (Demogorgon wins).
+**DEMONET: RADAR HUNT** is a real-time, location-based multiplayer game played entirely in the physical world using your phone's GPS.
+
+Players take on secret asymmetric roles — hunter or hunted — and physically move through a real-world space: a campus, park, or neighbourhood. Your real GPS coordinates are your in-game coordinates. There are no controllers. There is no screen to hide behind. There is only the radar, the map, and the sound of footsteps.
+
+> *Think Among Us — except you actually run.*
+
+The game is built as a **serverless-friendly web app** using Next.js API routes with **HTTP polling** for state synchronisation, requiring zero WebSocket infrastructure. One deployment. Fully playable on any phone browser.
+
+---
+
+## ✨ Features
+
+- 🌍 **Real GPS gameplay** — your physical location is your game position, validated server-side
+- 📡 **HTTP polling architecture** — no WebSocket server required; deploys cleanly to Vercel or any serverless host
+- 🎭 **Asymmetric roles** — three completely different experiences on the same device
+- ⚡ **Phase-based escalation** — Demogorgon's detection range grows over time, guaranteeing tension
+- 🗳️ **Emergency voting** — any alive player can call a 60-second group vote to eliminate a suspect
+- 📍 **10-metre catch radius** — the Demogorgon must *physically* close the gap; server validates distance
+- 📱 **Mobile-first** — haptic feedback and spatial audio hooks for full immersion
+- 🧹 **Auto cleanup** — game rooms expire after 2 hours of inactivity
 
 ---
 
 ## 👥 Roles
 
-| Role | Team | Win Condition | Key Abilities |
-|------|------|---------------|---------------|
-| **Demogorgon** | Hunter | Catch all Security agents | Phase Shift (10s invisibility), Sense (detect nearest prey) |
-| **Security** | Survivors | Survive 15 min or vote out the Demogorgon | GPS radar, Triangulate (approximate Demogorgon position) |
-| **Stealth** | Hunter | Help Demogorgon eliminate all Security | Hidden from radar, Fake Signal (mislead agents) |
+Three roles. Three completely different games.
 
-> Stealth is only assigned in games with **4 or more players**.
+### 🔴 Demogorgon — *The Hunter*
+
+You are the threat. You see everyone. You are hunted only by suspicion.
+
+| | |
+|---|---|
+| **Win condition** | Catch every Security agent |
+| **Phase Shift** | Go invisible to the radar for 10 seconds (30s cooldown) |
+| **Sense** | Instantly reveals the bearing and distance of the nearest prey (30s cooldown) |
+| **Visibility** | Sees all players on the map at all times |
 
 ---
 
-## ⚡ Game Phases
+### 🟢 Security — *The Survivors*
 
-The Demogorgon's effective radar detection range grows as the game progresses — tension is guaranteed even in quiet early rounds.
+You don't know who the Demogorgon is. Your radar tells you *something* is near. Move smart. Vote carefully.
 
-| Phase | Time Window | Radar Range |
-|-------|-------------|-------------|
-| Early | 0–25% | 150 m |
-| Mid | 25–50% | 200 m |
-| Late | 50–75% | 300 m |
-| Blood Moon | 75–100% | 500 m |
+| | |
+|---|---|
+| **Win condition** | Survive the full 15 minutes, or vote out the Demogorgon |
+| **Radar** | Proximity pulse showing threat level and bearing direction |
+| **Triangulate** | Returns the Demogorgon's approximate GPS position (±50–100m noise) with a 60s cooldown |
+| **Emergency Vote** | Any alive player can trigger a 60-second group vote |
+
+---
+
+### 🟡 Stealth — *The Spy* *(4+ players only)*
+
+You look like Security. You act like Security. You are not Security.
+
+| | |
+|---|---|
+| **Win condition** | Help the Demogorgon eliminate all Security agents |
+| **Radar ghost** | Completely invisible to Security's proximity radar |
+| **Fake Signal** | Broadcasts a false radar ping to mislead Security (30s cooldown) |
+| **Cover** | Appears as a normal Security agent to all non-Demogorgon players |
+
+---
+
+## 🕹️ Game Flow
+
+```
+  Player opens app
+       │
+  ┌────┴────┐
+  │  Entry  │  Choose name → Create or Join lobby
+  └────┬────┘
+       │
+  ┌────┴────┐
+  │  Lobby  │  Share 6-char code → All players mark Ready
+  └────┬────┘
+       │  Host hits START
+  ┌────┴────────────┐
+  │  Role Reveal    │  Server assigns roles secretly, each player sees only their own
+  └────┬────────────┘
+       │
+  ┌────┴─────────────────────────────────────────────────────┐
+  │                      LIVE GAME                           │
+  │                                                          │
+  │  • Phones poll /api/game/state every ~1 second           │
+  │  • GPS positions posted to /api/game/state (POST)        │
+  │  • Server recalculates threat levels, phases, win cond.  │
+  │  • Abilities fired via /api/game/action                  │
+  │  • Emergency vote via /api/game/action → callVote        │
+  └────┬──────────────────┬───────────────────────────────────┘
+       │                  │
+  ┌────┴────┐        ┌────┴──────┐
+  │  Caught │        │ Vote Out  │  60s majority vote
+  └────┬────┘        └────┬──────┘
+       └────────┬──────────┘
+           ┌────┴────┐
+           │  GAME   │  Winner declared → Post-game screen
+           │  OVER   │
+           └─────────┘
+```
+
+---
+
+## 📈 Phase Escalation
+
+The game automatically escalates through four phases based on elapsed time. The Demogorgon's effective radar detection range expands each phase — guaranteed chaos in the final stretch.
+
+| Phase | Time Window | Security Radar Range | Atmosphere |
+|-------|-------------|----------------------|------------|
+| 🟢 **Early** | 0 – 25% | 150 m | Cautious exploration |
+| 🟡 **Mid** | 25 – 50% | 200 m | Tension building |
+| 🟠 **Late** | 50 – 75% | 300 m | Active pursuit begins |
+| 🔴 **Blood Moon** | 75 – 100% | 500 m | All-out hunt |
+
+> Phase transitions are computed server-side on every position update — no separate clock process needed.
+
+---
+
+## 🏗️ Architecture
+
+DEMONET is built around a **polling-first, serverless-compatible** architecture. There is no persistent WebSocket server. All real-time state lives in Next.js API routes backed by an in-memory store.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       CLIENT (Browser)                        │
+│                                                               │
+│  ┌─────────────┐   ┌─────────────┐   ┌────────────────────┐  │
+│  │  useGPS()   │   │  Game UI    │   │  Polling Loop      │  │
+│  │  watchPos   │──▶│  Components │──▶│  GET /api/game/    │  │
+│  │  ~2s update │   │             │   │  state every ~1s   │  │
+│  └─────────────┘   └─────────────┘   └────────┬───────────┘  │
+│                                               │               │
+│         POST /api/game/state  (GPS position push)             │
+│         POST /api/game/action (catch, vote, ability)          │
+└───────────────────────────────────────────────┼──────────────┘
+                                                │  HTTP
+┌───────────────────────────────────────────────▼──────────────┐
+│                  NEXT.JS API ROUTES (Serverless)               │
+│                                                               │
+│  /api/lobby/create    →  createRoom()                         │
+│  /api/lobby/join      →  joinRoom()                           │
+│  /api/lobby/state     →  getLobbyState(), setPlayerReady()    │
+│  /api/game/start      →  startGame(), assignRoles()           │
+│  /api/game/state      →  getGameState(), updatePosition()     │
+│  /api/game/action     →  attemptCatch(), useAbility(),        │
+│                           startVoting(), castVote()           │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐     │
+│  │               lib/game-store.ts                      │     │
+│  │                                                      │     │
+│  │  In-memory Map<roomCode, GameRoom>                   │     │
+│  │  • Haversine distance & bearing calculations         │     │
+│  │  • Role assignment (server-authoritative)            │     │
+│  │  • Phase escalation logic                            │     │
+│  │  • Catch validation (10m radius)                     │     │
+│  │  • Ability cooldown tracking                         │     │
+│  │  • Vote counting & majority resolution               │     │
+│  │  • Room expiry cleanup (every 10 min)                │     │
+│  └──────────────────────────────────────────────────────┘     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Why HTTP Polling?
+
+| Concern | Decision |
+|---------|----------|
+| **Deployment simplicity** | Runs entirely on Vercel/Netlify — no separate server process |
+| **Reliability** | HTTP is stateless; no connection drops, no reconnect logic |
+| **Serverless compatible** | Each request is independent; works with edge functions |
+| **Sufficient frequency** | 1-second polling matches the GPS update rate — imperceptible lag in practice |
+| **Trade-off** | ~1s state latency vs real-time push. Acceptable for a walking-pace game |
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **[Next.js 16](https://nextjs.org/)** — React framework with App Router and API routes
-- **[Socket.IO Client](https://socket.io/)** — Real-time bidirectional event communication
-- **Browser Geolocation API** — Continuous GPS tracking via `watchPosition`
-- **[Tailwind CSS v4](https://tailwindcss.com/)** + **[Radix UI](https://www.radix-ui.com/)** — Accessible, styled UI components
-- **Spatial Audio & Haptics** — Immersive mobile feedback hooks
-
-### Backend
-- **[Socket.IO Server](https://socket.io/)** — Node.js WebSocket server handling all game events
-- **In-memory game state** — Fast, serverless-friendly room management (swap to Redis for production)
-- **Haversine formula** — Server-side GPS distance and bearing calculations
-- **Server-authoritative logic** — Role assignment, catch validation, vote processing all happen server-side
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router) |
+| Language | TypeScript 5.7 |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| UI Components | [Radix UI](https://www.radix-ui.com/) |
+| Location | Browser Geolocation API (`watchPosition`) |
+| State sync | HTTP Polling — native `fetch` against Next.js API routes |
+| Spatial math | Haversine formula (built-in, zero dependencies) |
+| Mobile UX | Web Vibration API (haptics) + Web Audio API (spatial sound) |
+| Deployment | [Vercel](https://vercel.com) (zero config) |
 
 ---
 
 ## 📁 Project Structure
 
 ```
+demonet-radar-hunt/
 ├── app/
 │   ├── api/
-│   │   ├── game/
-│   │   │   ├── action/route.ts    # catch, ability, vote endpoints
-│   │   │   ├── start/route.ts     # start game endpoint
-│   │   │   └── state/route.ts     # poll game state
-│   │   └── lobby/
-│   │       ├── create/route.ts    # create a new room
-│   │       ├── join/route.ts      # join existing room
-│   │       └── state/route.ts     # poll lobby state
-│   └── page.tsx                   # Entry point
-├── components/
-│   └── game/
-│       ├── stranger-things-game.tsx   # Root game component
-│       ├── lobby-screen.tsx           # Waiting room UI
-│       ├── role-reveal-screen.tsx     # Role assignment reveal
-│       ├── game-screen.tsx            # Main gameplay UI
-│       ├── vote-screen.tsx            # Emergency vote UI
-│       ├── post-game-screen.tsx       # Results screen
-│       ├── player-hud.tsx             # In-game HUD (radar, timer)
-│       ├── abilities-panel.tsx        # Ability buttons + cooldowns
-│       ├── radar-canvas.tsx           # Proximity radar renderer
-│       └── flash-card.tsx             # Role/event notification cards
+│   │   ├── lobby/
+│   │   │   ├── create/route.ts       # POST — create room, returns 6-char code
+│   │   │   ├── join/route.ts         # POST — join by code
+│   │   │   └── state/route.ts        # GET — poll lobby | POST — ready/leave
+│   │   └── game/
+│   │       ├── start/route.ts        # POST — host starts, roles assigned
+│   │       ├── state/route.ts        # GET — poll game state | POST — push GPS
+│   │       └── action/route.ts       # POST — catch / ability / vote
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx                      # Root → <StrangerThingsGame />
+│
+├── components/game/
+│   ├── stranger-things-game.tsx      # Root state machine (screens + player ID)
+│   ├── counter-entry.tsx             # Landing / entry screen
+│   ├── join-screen.tsx               # Create or join lobby
+│   ├── lobby-screen.tsx              # Waiting room with ready toggle
+│   ├── role-reveal-screen.tsx        # Role assignment reveal
+│   ├── game-screen.tsx               # Main gameplay view
+│   ├── vote-screen.tsx               # Emergency vote UI
+│   ├── post-game-screen.tsx          # Results + winner
+│   ├── player-hud.tsx                # Radar, timer, phase indicator
+│   ├── abilities-panel.tsx           # Ability buttons with cooldown display
+│   ├── radar-canvas.tsx              # Canvas-based proximity radar renderer
+│   ├── alert-banner.tsx              # In-game event notifications
+│   ├── broadcast-panel.tsx           # Game-wide message feed
+│   ├── flash-card.tsx                # Role / event overlay cards
+│   ├── lightning-background.tsx      # Animated background effect
+│   └── trees.tsx                     # Decorative scene elements
+│
 ├── hooks/
-│   ├── use-gps.ts                 # GPS watchPosition wrapper
-│   ├── use-socket.ts              # Socket.IO connection hook
-│   ├── use-spatial-audio.ts       # Positional audio hook
-│   └── use-haptics.ts             # Device vibration hook
+│   ├── use-gps.ts                    # watchPosition wrapper with error handling
+│   ├── use-socket.ts                 # Polling abstraction layer
+│   ├── use-spatial-audio.ts          # Positional audio (Web Audio API)
+│   ├── use-haptics.ts                # Device vibration patterns
+│   ├── use-mobile.ts                 # Viewport / device detection
+│   └── use-toast.ts                  # Toast notification hook
+│
 ├── lib/
-│   └── game-store.ts              # In-memory game state + logic
-└── server/
-    └── index.ts                   # Socket.IO server (separate process)
+│   └── game-store.ts                 # In-memory game state + all game logic
+│
+└── styles/
+    └── globals.css
 ```
 
 ---
@@ -102,18 +268,19 @@ The Demogorgon's effective radar detection range grows as the game progresses �
 
 ### Prerequisites
 
-- **Node.js** 18+
-- **npm** or **pnpm**
-- A device with GPS (or Chrome DevTools location spoofing for testing)
+- Node.js **18+**
+- npm or pnpm
+- A phone or browser with GPS support
+  *(Chrome DevTools → Sensors → Location can spoof coordinates for local testing)*
 
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/stranger-things-gps.git
-cd stranger-things-gps
+git clone https://github.com/your-username/demonet-radar-hunt.git
+cd demonet-radar-hunt
 ```
 
-### 2. Install dependencies
+### 2. Install
 
 ```bash
 npm install
@@ -121,176 +288,208 @@ npm install
 pnpm install
 ```
 
-### 3. Configure environment
+### 3. Run
 
 ```bash
-cp .env.local.example .env.local
+npm run dev
 ```
 
-Edit `.env.local`:
+Open `http://localhost:3000`. No environment variables are required for local development.
 
-```env
-# For local development — the Socket.IO server runs on port 4000
-NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
-```
-
-### 4. Run the development servers
-
-You need to run **both** the Next.js frontend and the Socket.IO server:
-
-```bash
-# Run both simultaneously
-npm run dev:all
-
-# Or in separate terminals:
-npm run dev          # Next.js on http://localhost:3000
-npm run dev:socket   # Socket.IO server on http://localhost:4000
-```
-
-### 5. Open in browser
-
-Go to `http://localhost:3000`, create a lobby, and share the room code with other players.
-
-> **Testing alone?** Open multiple browser tabs — each tab gets an independent player session.
+> **Testing solo?** Open 3–4 browser tabs. Each tab generates an independent `playerId` — you can simulate a full game from one machine using Chrome DevTools to spoof different GPS coordinates per tab *(DevTools → More tools → Sensors → Location)*.
 
 ---
 
 ## 🌐 Deployment
 
-### Frontend (Next.js)
+DEMONET requires **no backend server**. Deploy the Next.js app and you're done.
 
-Deploy to [Vercel](https://vercel.com) with zero config:
+### Vercel (recommended)
 
 ```bash
+npm install -g vercel
 vercel --prod
 ```
 
-Set the environment variable in your Vercel project dashboard:
-```
-NEXT_PUBLIC_SOCKET_URL=https://your-socket-server.com
-```
+All API routes deploy as serverless functions automatically. Zero configuration needed.
 
-### Socket.IO Server
+### Other platforms
 
-The Socket.IO server needs a persistent Node.js environment (not serverless). Recommended platforms:
-
-- **[Railway](https://railway.app)** — `npm run start:socket`
-- **[Render](https://render.com)** — Web Service with `node dist/index.js`
-- **[Fly.io](https://fly.io)** — Good for WebSocket-heavy workloads
-
-Build the server before deploying:
+Any platform that supports Next.js works — Netlify, Railway, Render, Fly.io.
 
 ```bash
-npm run build:socket   # Compiles TypeScript to dist/
-npm run start:socket   # Starts compiled server
+npm run build
+npm run start
 ```
 
-Set `CORS_ORIGIN` on the server to your frontend URL:
-```env
-CORS_ORIGIN=https://your-app.vercel.app
-PORT=4000
+> **Production note:** The in-memory game store does not persist across serverless function cold starts or multiple instances. For high-traffic or multi-region deployments, replace the `Map` in `lib/game-store.ts` with a Redis-backed store (e.g. [Upstash](https://upstash.com/)). The rest of the app does not need to change.
+
+---
+
+## 📡 API Reference
+
+All endpoints are Next.js route handlers under `/api/`. State is polled client-side every ~1 second; no persistent connection is required.
+
+### Lobby
+
+#### `POST /api/lobby/create`
+Create a new game room.
+
+```jsonc
+// Request
+{ "playerId": "player_abc123", "playerName": "Eleven" }
+
+// Response
+{ "success": true, "gameCode": "XK7M2P", "isHost": true }
+```
+
+#### `POST /api/lobby/join`
+Join an existing room by code.
+
+```jsonc
+// Request
+{ "gameCode": "XK7M2P", "playerId": "player_def456", "playerName": "Mike" }
+
+// Response
+{ "success": true, "gameCode": "XK7M2P", "isHost": false }
+```
+
+#### `GET /api/lobby/state?gameCode=XK7M2P&playerId=player_abc123`
+Poll lobby state. Returns player list, ready states, and host ID.
+If the game has already started, returns `{ "state": "playing", "gameStarted": true, "role": "security" }` so late-polling clients can transition screens automatically.
+
+#### `POST /api/lobby/state`
+Update ready state or leave the room.
+
+```jsonc
+// Toggle ready
+{ "gameCode": "XK7M2P", "playerId": "player_abc123", "action": "ready", "ready": true }
+
+// Leave room
+{ "gameCode": "XK7M2P", "playerId": "player_abc123", "action": "leave" }
 ```
 
 ---
 
-## 🎮 Available Scripts
+### Game
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Next.js dev server |
-| `npm run dev:socket` | Start Socket.IO server with hot reload |
-| `npm run dev:all` | Run both servers concurrently |
-| `npm run build` | Build Next.js for production |
-| `npm run build:socket` | Compile Socket.IO server TypeScript |
-| `npm run start` | Start Next.js production server |
-| `npm run start:socket` | Start compiled Socket.IO server |
-| `npm run lint` | Run ESLint |
+#### `POST /api/game/start`
+Host starts the game. Server randomly assigns roles and begins the timer.
+
+```jsonc
+// Request
+{ "gameCode": "XK7M2P", "playerId": "player_abc123" }
+
+// Response
+{ "success": true, "role": "demogorgon" }
+```
+
+#### `GET /api/game/state?gameCode=XK7M2P&playerId=player_abc123`
+Poll full game state for a specific player. Returns **role-filtered data** — Security cannot see the Demogorgon's exact position; Demogorgon sees everyone.
+
+```jsonc
+{
+  "state": "playing",
+  "phase": "mid",
+  "role": "security",
+  "isAlive": true,
+  "timeRemaining": 742,
+  "threatLevel": 0.72,
+  "threatBearing": 134,
+  "visiblePlayers": [...],
+  "playerCount": 5,
+  "aliveCount": 4,
+  "winner": null
+}
+```
+
+#### `POST /api/game/state`
+Push the player's current GPS coordinates to the server. Triggers phase recalculation and win condition check. Returns the updated game state.
+
+```jsonc
+// Request
+{ "gameCode": "XK7M2P", "playerId": "player_abc123", "lat": 20.2961, "lng": 85.8245 }
+```
+
+#### `POST /api/game/action`
+Perform a game action. The `action` field determines behaviour.
+
+| `action` | Who can use | Extra fields | Effect |
+|----------|-------------|--------------|--------|
+| `catch` | Demogorgon | `targetId` | Validates ≤10m gap; marks target eliminated |
+| `ability` | Role-specific | `abilityType` | Executes ability, starts cooldown |
+| `callVote` | Any alive player | — | Opens 60s voting window for all players |
+| `vote` | Any alive player | `targetId` | Registers vote; resolves immediately if all votes are cast |
+
+**Ability types:**
+
+| `abilityType` | Role | Cooldown | Effect |
+|---------------|------|----------|--------|
+| `phaseShift` | Demogorgon | 30s | 10s radar invisibility |
+| `sense` | Demogorgon | 30s | Returns bearing + distance of nearest prey |
+| `triangulate` | Security | 60s | Returns Demogorgon's approx. position (±50–100m noise) |
+| `fakeSignal` | Stealth | 30s | Emits a false radar ping to mislead Security |
 
 ---
 
-## 🔌 Socket.IO Events
+## ⚙️ Game Configuration
 
-### Client → Server
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `lobby:create` | `{ playerId, playerName }` | Create a new room |
-| `lobby:join` | `{ gameCode, playerId, playerName }` | Join an existing room |
-| `lobby:ready` | `{ gameCode, playerId, ready }` | Toggle ready state |
-| `lobby:leave` | `{ gameCode, playerId }` | Leave the room |
-| `game:start` | `{ gameCode, playerId }` | Host starts the game |
-| `game:position` | `{ gameCode, playerId, lat, lng }` | Broadcast GPS position |
-| `game:catch` | `{ gameCode, playerId, targetId }` | Demogorgon attempts a catch |
-| `game:ability` | `{ gameCode, playerId, abilityType }` | Use a role ability |
-| `game:callVote` | `{ gameCode, playerId }` | Trigger emergency vote |
-| `game:vote` | `{ gameCode, playerId, targetId }` | Cast vote for a player |
-
-### Server → Client
-
-| Event | Description |
-|-------|-------------|
-| `lobby:state` | Updated lobby player list |
-| `game:started` | Game has begun, includes assigned role |
-| `game:state` | Per-player game state update (1 s tick) |
-| `game:phaseChange` | Game phase has escalated |
-| `game:elimination` | A player has been caught |
-| `game:voteStarted` | Emergency vote initiated |
-| `game:voteUpdate` | Vote count progress |
-| `game:voteResult` | Vote outcome + eliminated player |
-| `game:ended` | Game over with winner |
-
----
-
-## ⚙️ Configuration
-
-Key game constants in `lib/game-store.ts` and `server/index.ts`:
+Key constants in `lib/game-store.ts`:
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `gameDuration` | `900` s (15 min) | Total game length |
-| `CATCH_RANGE` | `10` m | Demogorgon catch radius |
-| `phaseShift duration` | `10` s | Invisibility ability duration |
-| `triangulate cooldown` | `60` s | Cooldown for Triangulate ability |
-| `other ability cooldown` | `30` s | Cooldown for other abilities |
-| `voting window` | `60` s | Time to cast votes |
-| `max players` | `10` | Max players per room |
-| `ROOM_EXPIRY_MS` | `2` hr | Inactive room cleanup time |
+| `gameDuration` | `900s` (15 min) | Total game length |
+| Catch radius | `10 m` | Demogorgon must be within 10m to eliminate |
+| Max players | `10` | Per room |
+| Stealth threshold | `4 players` | Stealth role only assigned at 4+ players |
+| Phase Shift duration | `10s` | Invisibility window |
+| Default ability cooldown | `30s` | Phase Shift, Sense, Fake Signal |
+| Triangulate cooldown | `60s` | Security's location reveal ability |
+| Voting window | `60s` | Time for all alive players to cast votes |
+| Room expiry | `2 hours` | Inactive rooms are automatically cleaned up |
 
 ---
 
-## 🧠 Architecture Notes
-
-**Why a separate Socket.IO server?**
-Next.js API routes are stateless and short-lived. Real-time game state (positions, cooldowns, vote counts) needs a persistent process with shared memory. The Socket.IO server holds all game rooms in a `Map` and broadcasts updates every second.
+## 🧠 Technical Notes
 
 **GPS accuracy**
-The browser Geolocation API requests `enableHighAccuracy: true`. In practice, accuracy ranges from 3–15 m outdoors. The 10 m catch radius accounts for this — works reliably in open spaces, less so in dense buildings.
+The Geolocation API is called with `enableHighAccuracy: true`, `maximumAge: 2000ms`, `timeout: 8000ms`. Real-world accuracy is typically 3–15m outdoors on modern phones. The 10m catch radius sits at the lower bound of this range — it requires genuine physical proximity.
 
-**Production state**
-The current in-memory store works for small deployments. For multi-server production, replace `gameRooms` with a Redis-backed store and use Socket.IO's Redis adapter for cross-instance event broadcasting.
+**Server-authoritative design**
+All sensitive logic runs server-side: role assignment, catch validation, distance calculation, ability resolution, and vote counting. Clients only send raw GPS coordinates and action intent — they cannot self-report a catch or fake a position that changes server state.
+
+**Haversine distance**
+All distance calculations use the Haversine great-circle formula to account for Earth's curvature. Accurate to within ~0.3% for the 10m–500m distances relevant to this game.
+
+**Polling latency**
+Clients poll `/api/game/state` approximately once per second, matching the GPS update cadence. The perceived lag between a position update and a radar change is under 2 seconds — imperceptible at walking or running speed.
+
+**Scaling**
+The in-memory `Map` is per-process. For horizontal scaling, replace the store with Redis and add a shared state layer. The `game-store.ts` module exposes a clean, synchronous-style interface — the rest of the app does not need to change.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Persistent leaderboard (Redis / Supabase)
-- [ ] Custom game zones (draw map boundaries)
-- [ ] Spectator mode with god's-eye view
-- [ ] PWA / installable native app
-- [ ] Configurable game duration and player caps
-- [ ] Sound packs and custom themes
+- [ ] Redis-backed persistent game store for multi-instance deployments
+- [ ] Custom game zone boundaries — draw a polygon on a map to confine gameplay
+- [ ] Spectator mode — live god's-eye view of the entire hunt
+- [ ] Configurable game settings per lobby (duration, catch radius, cooldowns)
+- [ ] Persistent leaderboard across sessions
+- [ ] PWA packaging for home-screen install and offline splash screen
 
 ---
 
-## 🤝 Contributing
+## 👨‍💻 Team
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
+Built at **Hackathon 2025** by:
 
-1. Fork the repo
-2. Create your feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
+| Name | GitHub |
+|------|--------|
+| Ansuman Swain | [@lightlimb78](https://github.com/lightlimb78) |
+| Dibyam Chandak | — |
+| Ashutosh Narayan | [@Ashutosh-334](https://github.com/Ashutosh-334) |
+| Suresh Kumar Ekka | [@sureshkum4r](https://github.com/sureshkum4r) |
 
 ---
 
@@ -300,4 +499,10 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-> *Built at a hackathon. Ready to be played anywhere.*
+<div align="center">
+
+**Built in a hackathon. Ready to be played anywhere.**
+
+*DEMONET: RADAR HUNT — because the real Upside Down was the friends we hunted along the way.*
+
+</div>
