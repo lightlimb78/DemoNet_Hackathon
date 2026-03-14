@@ -256,19 +256,19 @@ export function CounterEntry({ onAgentMenu }: CounterEntryProps) {
 
           {/* Corner decorations */}
           <div
-            className="absolute left-4 top-4 h-12 w-12 border-l border-t"
+            className="absolute left-2 top-4 h-12 w-12 border-l border-t"
             style={{ borderColor: "rgba(220, 20, 60, 0.3)" }}
           />
           <div
-            className="absolute right-4 top-4 h-12 w-12 border-r border-t"
+            className="absolute right-3 top-4 h-12 w-12 border-r border-t"
             style={{ borderColor: "rgba(220, 20, 60, 0.3)" }}
           />
           <div
-            className="absolute bottom-4 left-4 h-12 w-12 border-b border-l"
+            className="absolute -bottom-3 left-2 h-12 w-12 border-b border-l"
             style={{ borderColor: "rgba(220, 20, 60, 0.3)" }}
           />
           <div
-            className="absolute bottom-4 right-4 h-12 w-12 border-b border-r"
+            className="absolute -bottom-3 right-3 h-12 w-12 border-b border-r"
             style={{ borderColor: "rgba(220, 20, 60, 0.3)" }}
           />
 
