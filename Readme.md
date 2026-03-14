@@ -72,10 +72,21 @@ You don't know who the Demogorgon is. Your radar tells you *something* is near. 
 
 ---
 
-### 🟡 Stealth — The Ghost Agent (4+ players only)
+### 🟡 Stealth — *The Ghost Agent* *(4+ players only)*
+
 You are Security — but nobody knows it, not even the Demogorgon. You stay off the radar until you're close enough to matter.
+
 Your advantage is invisibility. The Demogorgon cannot detect you on its map. Security agents don't know you exist as a separate role. You move freely, get close to the Demogorgon without triggering its senses, and feed real intelligence back to your team — all without anyone knowing you were ever there.
-TeamSecurity (wins when Security wins)Win conditionSurvive the full 15 minutes, or help vote out the DemogorgonRadar ghostDoes not appear on the Demogorgon's radar or map until within close proximityFake SignalBroadcasts a false radar ping to confuse and misdirect the Demogorgon (30s cooldown)VisibilityAppears as a normal player to everyone — no one knows the Stealth role exists until the game ends
+
+| | |
+|---|---|
+| **Team** | Security (wins when Security wins) |
+| **Win condition** | Survive the full 15 minutes, or help vote out the Demogorgon |
+| **Radar ghost** | Does **not** appear on the Demogorgon's radar or map until within close proximity |
+| **Fake Signal** | Broadcasts a false radar ping to confuse and misdirect the Demogorgon (30s cooldown) |
+| **Visibility** | Appears as a normal player to everyone — no one knows the Stealth role exists until the game ends |
+
+> The Stealth player is Security's silent scout. They can shadow the Demogorgon undetected, confirm its real position, and bait it into a bad vote — all from the shadows.ds
 
 ---
 
